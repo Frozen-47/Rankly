@@ -18,7 +18,15 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/products')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        // Ensure we actually got JSON back, not an HTML error page from Vite
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new TypeError("Failed to get JSON from server");
+        }
+        return res.json();
+      })
       .then(data => {
         const prices = data.map((p: any) => p.price);
         const maxPrice = Math.max(...prices);
@@ -28,7 +36,14 @@ export default function App() {
           ...p,
           score: calculateScore(p.rating, p.price, maxPrice, minPrice, getFeatureScore(p.specs))
         }));
+        
         setProducts(scoredData);
+      })
+      .catch(err => {
+        console.error("Failed to load products:", err);
+      })
+      .finally(() => {
+        // This ensures the loading screen ALWAYS goes away, even if the fetch fails
         setLoading(false);
       });
   }, []);
