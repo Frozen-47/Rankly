@@ -1,6 +1,6 @@
 {
   "name": "Rankly",
-  "description": "A smart product comparison platform that ranks products using a custom scoring algorithm and AI-powered insights.",
+  "description": "AI-powered product comparison tool for online shoppers. Summarize reviews, compare specs, and find the best value with Rankly Score.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

@@ -1,23 +1,24 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export interface Product {
   id: string;
   name: string;
-  price: number;
+  price: string;
   rating: number;
-  specs: {
-    ram: string;
-    battery: string;
-    camera: string;
-    processor: string;
-    display: string;
-    [key: string]: string;
-  };
-  image: string;
-  source: string;
-  score?: number;
+  image?: string;
+  specs: Record<string, string>;
+  pros: string[];
+  cons: string[];
+  ranklyScore: number; // 0-100
+  summary: string;
+  url: string;
 }
 
-export interface ComparisonResult {
+export interface ComparisonData {
   products: Product[];
-  winnerId: string;
-  recommendation: string;
+  commonSpecs: string[];
+  verdict: string;
 }
