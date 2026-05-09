@@ -56,12 +56,25 @@ You MUST respond in valid JSON format matching exactly this structure:
         content: prompt 
       }
     ],
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     response_format: { type: "json_object" }
   });
 
   const text = response.choices[0]?.message?.content;
   if (!text) throw new Error("No response from AI");
   
-  return JSON.parse(text) as ComparisonData;
+  try {
+    const data = JSON.parse(text);
+    
+    // Validate the response structure
+    if (!data.products || !Array.isArray(data.products) || data.products.length === 0) {
+      throw new Error("AI returned no products. Please be more specific (e.g., 'iPhone 15 vs Galaxy S24').");
+    }
+    
+    return data as ComparisonData;
+  } catch (err: any) {
+    console.error("AI Response Parsing/Validation Error:", err);
+    console.log("Raw AI Output:", text);
+    throw new Error(err.message || "Failed to parse product data.");
+  }
 }

@@ -11,6 +11,39 @@ import { compareProducts } from './services/groqService';
 import { ComparisonData, Product } from './types';
 import { db } from './services/dbService';
 
+const ALL_TRENDING = [
+  {
+    category: "Laptops",
+    query: "MacBook Pro M3 vs Dell XPS 14",
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    category: "Smartphones",
+    query: "iPhone 15 Pro Max vs Galaxy S24 Ultra",
+    image: "https://images.unsplash.com/photo-1592899677974-c466c4f1d019?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    category: "Headphones",
+    query: "Sony WH-1000XM5 vs AirPods Max",
+    image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    category: "Cameras",
+    query: "Sony A7IV vs Canon R6 Mark II",
+    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    category: "Tablets",
+    query: "iPad Pro M4 vs Galaxy Tab S9 Ultra",
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80"
+  },
+  {
+    category: "Watches",
+    query: "Apple Watch Ultra 2 vs Garmin Epix",
+    image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=400&q=80"
+  }
+];
+
 function ProductCard({ product, index = 0 }: { product: Product, index?: number }) {
   const { isSignedIn, user } = useUser();
   const [isSaved, setIsSaved] = useState(false);
@@ -165,6 +198,14 @@ export default function App() {
   const [data, setData] = useState<ComparisonData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(true);
+  const [trendingIndex, setTrendingIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTrendingIndex((prev) => (prev + 3) % ALL_TRENDING.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -174,31 +215,41 @@ export default function App() {
     }
   }, [isDark]);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-
+  const executeSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+    
+    setQuery(searchQuery);
     setLoading(true);
     setError(null);
     try {
       if (user) {
-        await db.saveSearch(user.id, query);
+        await db.saveSearch(user.id, searchQuery);
       }
-      const result = await compareProducts(query);
+      const result = await compareProducts(searchQuery);
       setData(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze products. Please try another search term or link.');
+      const message = err?.message || 'Failed to analyze products. Please try another search term or link.';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    executeSearch(query);
+  };
+
   return (
-    <div className="min-h-screen relative flex flex-col w-full overflow-x-hidden" id="rankly-root">
+    <div className="min-h-screen relative flex flex-col w-full overflow-x-hidden bg-background text-foreground transition-colors duration-500" id="rankly-root">
       
-      {/* Background Mesh Gradients */}
-      <img src="/bg_gradient.avif" className="fixed inset-0 w-full h-full object-cover z-[-50] opacity-40 dark:opacity-60 pointer-events-none" alt="" />
+      {/* Background Blobs */}
+      <div className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-[-50]">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
+        <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-purple-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
+      </div>
 
       <div className="p-8 md:p-12 flex flex-col gap-10 flex-1 w-full">
         {/* Header */}
@@ -230,25 +281,27 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex-1 w-full max-w-full md:max-w-md">
-              <form onSubmit={handleSearch} className="relative group" id="search-form">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Paste URLs or search..."
-                  className="w-full bg-muted/50 md:bg-transparent border border-border md:border-none py-2.5 md:py-2 px-4 rounded-lg md:rounded-none text-sm focus:outline-none focus:border-zinc-500 placeholder:text-muted-foreground text-foreground transition-all"
-                />
-                <div className="absolute right-4 top-3 md:top-2 text-muted-foreground group-focus-within:text-foreground transition-colors">
-                  <Search className="w-4 h-4" />
-                </div>
-                {loading && (
-                  <div className="absolute right-10 top-3 md:top-2 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
+            {(data || loading) && (
+              <div className="flex-1 w-full max-w-full md:max-w-md hidden md:block">
+                <form onSubmit={handleSearch} className="relative group" id="search-form">
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Paste URLs or search..."
+                    className="w-full bg-muted/50 md:bg-transparent border border-border md:border-none py-2.5 md:py-2 px-4 rounded-lg md:rounded-none text-sm focus:outline-none focus:border-zinc-500 placeholder:text-muted-foreground text-foreground transition-all"
+                  />
+                  <div className="absolute right-4 top-3 md:top-2 text-muted-foreground group-focus-within:text-foreground transition-colors">
+                    <Search className="w-4 h-4" />
                   </div>
-                )}
-              </form>
-            </div>
+                  {loading && (
+                    <div className="absolute right-10 top-3 md:top-2 text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  )}
+                </form>
+              </div>
+            )}
 
             <nav className="flex gap-4 md:gap-6 text-sm font-medium text-muted-foreground items-center justify-between w-full md:w-auto">
               <div className="flex gap-4 md:gap-6">
@@ -374,31 +427,75 @@ export default function App() {
             ) : !loading ? (
               <div className="flex flex-col gap-32 pb-20 pt-20">
                 {/* Hero Section */}
-                <div className="flex flex-col items-center justify-center gap-8 text-center min-h-[50vh]">
+                <div className="flex flex-col items-center justify-center gap-8 text-center min-h-[50vh] relative">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-2xl bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.2 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
                   >
-                    <h2 className="text-6xl md:text-8xl font-bold text-foreground leading-none tracking-tighter mb-6">
+                    <h2 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-foreground via-foreground/90 to-muted-foreground leading-tight tracking-tighter mb-6 pb-2">
                       Deciphering<br />
-                      <span className="text-muted-foreground opacity-80">the Market.</span>
+                      <span className="opacity-80 font-bold">the Market.</span>
                     </h2>
-                    <p className="text-muted-foreground text-lg max-w-xl mx-auto font-light leading-relaxed">
+                    <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed mb-10">
                       The sophisticated engine for online researchers. Search or paste URLs to reveal the hidden value in any product landscape.
                     </p>
+                    
+                    <form onSubmit={handleSearch} className="relative w-full max-w-2xl mx-auto flex items-center shadow-2xl rounded-full">
+                      <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Paste URLs or search products..."
+                        className="w-full bg-card/60 backdrop-blur-xl border border-border/50 focus:border-indigo-500/50 hover:border-border transition-all rounded-full py-4 pl-8 pr-16 text-lg outline-none text-foreground placeholder:text-muted-foreground"
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="absolute right-3 bg-foreground text-background hover:opacity-90 disabled:opacity-50 p-2.5 rounded-full transition-opacity flex items-center justify-center"
+                      >
+                        <Search className="w-5 h-5" />
+                      </button>
+                    </form>
                   </motion.div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl opacity-20 pointer-events-none grayscale mt-10">
-                    {[1, 2, 3].map((i) => (
-                      <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.2, duration: 0.8 }}
-                        className="bg-card border border-border rounded-xl aspect-[4/5]" 
-                      />
-                    ))}
+                  <div className="w-full max-w-4xl mt-16">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        Trending Now
+                      </h3>
+                      <div className="flex gap-1">
+                        {Array.from({ length: ALL_TRENDING.length / 3 }).map((_, i) => (
+                          <div key={i} className={`h-1 rounded-full transition-all duration-500 ${Math.floor(trendingIndex / 3) === i ? 'w-4 bg-indigo-500' : 'w-1 bg-border'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <AnimatePresence mode="popLayout">
+                        {ALL_TRENDING.slice(trendingIndex, trendingIndex + 3).map((item, i) => (
+                          <motion.button 
+                            key={item.query}
+                            onClick={() => executeSearch(item.query)}
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="glass-card rounded-2xl p-4 flex flex-col gap-4 text-left hover:border-indigo-500/50 hover:shadow-indigo-500/20 transition-all group overflow-hidden relative" 
+                          >
+                            <div className="w-full h-32 rounded-xl overflow-hidden relative">
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+                              <img src={item.image} alt={item.category} className="w-full h-full object-cover transition-opacity duration-700 group-hover:opacity-80" />
+                              <p className="absolute bottom-3 left-3 z-20 text-[10px] text-white/90 uppercase tracking-widest font-bold drop-shadow-md">{item.category}</p>
+                            </div>
+                            <div className="px-1">
+                              <p className="text-sm text-foreground font-semibold line-clamp-2 group-hover:text-indigo-500 transition-colors">{item.query}</p>
+                            </div>
+                          </motion.button>
+                        ))}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
 
@@ -408,35 +505,44 @@ export default function App() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 0.8 }}
-                  className="flex flex-col md:flex-row gap-12 items-center max-w-5xl mx-auto w-full px-6"
+                  className="flex flex-col lg:flex-row gap-16 items-center max-w-6xl mx-auto w-full px-6 py-20"
                   id="about"
                 >
-                  <div className="flex-1 space-y-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest">
-                      <Star className="w-3 h-3" /> About Rankly
+                  <div className="flex-1 space-y-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest shadow-sm">
+                      <Star className="w-4 h-4" /> About Rankly
                     </div>
-                    <h3 className="text-3xl md:text-5xl font-bold text-foreground tracking-tight">Intelligence at the speed of thought.</h3>
-                    <p className="text-muted-foreground leading-relaxed text-lg">
+                    <h3 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight leading-tight">
+                      Intelligence at the <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">speed of thought.</span>
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed text-lg md:text-xl font-medium">
                       Rankly isn't just a search engine; it's an automated research assistant powered by Groq's lightning-fast LPU inference engine. We crawl, parse, and synthesize complex product data in milliseconds.
                     </p>
                   </div>
-                  <div className="flex-1 w-full bg-card border border-border rounded-2xl p-8 relative overflow-hidden shadow-xl">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
-                    <div className="space-y-6 relative z-10">
+                  <div className="flex-1 w-full glass-card rounded-3xl p-10 relative overflow-hidden">
+                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="space-y-8 relative z-10">
                       {[
-                        { title: "Real-time Synthesis", desc: "No pre-baked databases. We analyze live URLs instantly." },
-                        { title: "Unbiased Scoring", desc: "Our proprietary AI evaluates objective strengths and weaknesses." },
-                        { title: "Standardized Metrics", desc: "We normalize disparate specs into an easy-to-read matrix." }
+                        { title: "Real-time Synthesis", desc: "No pre-baked databases. We analyze live URLs instantly with AI." },
+                        { title: "Unbiased Scoring", desc: "Our proprietary AI evaluates objective strengths and weaknesses without ads." },
+                        { title: "Standardized Metrics", desc: "We normalize disparate specs into an easy-to-read, clean matrix." }
                       ].map((item, i) => (
-                        <div key={i} className="flex gap-4">
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0 border border-border text-foreground">
-                            {i + 1}
+                        <motion.div 
+                          key={i} 
+                          initial={{ opacity: 0, x: 20 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.15 }}
+                          viewport={{ once: true }}
+                          className="flex gap-6 items-start group"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center shrink-0 text-foreground shadow-sm group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all duration-300">
+                            <span className="font-bold">{i + 1}</span>
                           </div>
                           <div>
-                            <h4 className="text-foreground font-semibold mb-1">{item.title}</h4>
-                            <p className="text-sm text-muted-foreground">{item.desc}</p>
+                            <h4 className="text-foreground text-lg font-semibold mb-2 group-hover:text-indigo-500 transition-colors">{item.title}</h4>
+                            <p className="text-base text-muted-foreground leading-relaxed">{item.desc}</p>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   </div>
@@ -448,15 +554,15 @@ export default function App() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 0.8 }}
-                  className="max-w-6xl mx-auto w-full px-6"
+                  className="max-w-6xl mx-auto w-full px-6 py-10"
                   id="use-cases"
                 >
-                  <div className="text-center mb-16 space-y-4">
-                    <h3 className="text-3xl md:text-5xl font-bold text-foreground tracking-tight">Built for every workflow.</h3>
-                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From casual shoppers to enterprise procurement, Rankly scales to meet your research needs.</p>
+                  <div className="text-center mb-20 space-y-6">
+                    <h3 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">Built for every workflow.</h3>
+                    <p className="text-muted-foreground text-xl max-w-3xl mx-auto font-medium">From casual shoppers to enterprise procurement, Rankly scales to meet your research needs.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[
                       {
                         title: "Consumer Tech",
@@ -474,15 +580,19 @@ export default function App() {
                         desc: "Export our raw AI synthesized matrices directly to PDF or CSV to include in your industry reports and stakeholder presentations."
                       }
                     ].map((useCase, i) => (
-                      <div key={i} className="bg-card border border-border rounded-2xl p-8 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors group">
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-indigo-500 dark:text-indigo-400 font-bold mb-4 block">
+                      <motion.div 
+                        key={i}
+                        className="glass-card rounded-3xl p-8 hover:border-indigo-500/50 hover:shadow-indigo-500/10 transition-all duration-300 group relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors" />
+                        <span className="inline-block px-3 py-1 rounded-full bg-background border border-border text-[10px] uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-400 font-bold mb-6 shadow-sm">
                           {useCase.role}
                         </span>
-                        <h4 className="text-xl font-semibold text-foreground mb-4">{useCase.title}</h4>
-                        <p className="text-muted-foreground leading-relaxed text-sm">
+                        <h4 className="text-2xl font-bold text-foreground mb-4">{useCase.title}</h4>
+                        <p className="text-muted-foreground leading-relaxed text-base">
                           {useCase.desc}
                         </p>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </motion.section>
@@ -497,14 +607,10 @@ export default function App() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-auto py-8 border-t border-border/40 flex flex-col items-center justify-center gap-4 text-sm text-muted-foreground">
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-            <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-          </div>
-          <p>© 2024 Rankly AI. All rights reserved.</p>
+        <footer className="mt-8 text-center text-[11px] text-muted-foreground border-t border-black/5 dark:border-white/10 pt-6 pb-2" style={{ animationDelay: '600ms' }}>
+          <p>
+            Built by Sabareesh. Find me on <a href="https://discord.com/users/1272910357517701147" className="text-foreground font-semibold hover:underline">Discord</a> and <a href="https://github.com/Frozen-47" className="text-foreground font-semibold hover:underline">GitHub</a>
+          </p>
         </footer>
       </div>
     </div>
