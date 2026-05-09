@@ -316,7 +316,7 @@ export default function App() {
         <header className="sticky top-0 z-50 border-b-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-6">
             {/* Logo */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            <a href="https://rankly.frozenn.in/" className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity">
               <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
                 <BarChart2 className="w-4 h-4 text-zinc-50 dark:text-zinc-900" />
               </div>
@@ -326,7 +326,7 @@ export default function App() {
               >
                 Rankly
               </span>
-            </div>
+            </a>
 
             {/* Inline search (results view only) */}
             {(data || loading) && (
@@ -451,11 +451,11 @@ export default function App() {
                         AI Insights
                       </p>
                       <div className="flex flex-col gap-4">
-                        {data.products.slice(0, 2).map((p, i) => (
+                        {[...data.products].sort((a, b) => b.ranklyScore - a.ranklyScore).slice(0, 2).map((p, i) => (
                           <div key={p.id} className={`p-4 border-l-4 ${i === 0 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/20'}`}>
                             <p className="text-xs font-black uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-1">{p.name}</p>
                             <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                              Ranked as the {i === 0 ? 'premium choice' : 'most balanced option'} based on market data.
+                              Ranked as the {i === 0 ? 'top recommended choice' : 'strong alternative'} based on its Rankly Score.
                             </p>
                           </div>
                         ))}
@@ -495,8 +495,8 @@ export default function App() {
                     className="text-6xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 leading-[0.9]"
                     style={{ fontFamily: 'var(--font-display)' }}
                   >
-                    Decipher<br />
-                    <span className="text-zinc-400 dark:text-zinc-600">the Market.</span>
+                    Compare<br />
+                    <span className="text-zinc-400 dark:text-zinc-600">Everything.</span>
                   </h1>
                   <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-xl leading-relaxed font-medium">
                     Search or paste product URLs to reveal data-driven comparisons, specs matrices, and AI verdicts — instantly.
@@ -521,16 +521,19 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <AnimatePresence mode="popLayout">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={trendingIndex}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                    >
                       {ALL_TRENDING.slice(trendingIndex, trendingIndex + 3).map((item) => (
-                        <motion.button
+                        <button
                           key={item.query}
                           onClick={() => executeSearch(item.query)}
-                          initial={{ opacity: 0, y: 16 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -16 }}
-                          transition={{ duration: 0.35, ease: 'easeOut' }}
                           className="group text-left border-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all duration-150 overflow-hidden"
                         >
                           <div className="relative h-28 overflow-hidden">
@@ -545,10 +548,10 @@ export default function App() {
                               {item.query}
                             </p>
                           </div>
-                        </motion.button>
+                        </button>
                       ))}
-                    </AnimatePresence>
-                  </div>
+                    </motion.div>
+                  </AnimatePresence>
                 </section>
 
                 {/* About */}
@@ -643,9 +646,9 @@ export default function App() {
         {/* ══════════════ FOOTER ══════════════ */}
         <footer className="border-t-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 py-5 px-6">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-500 font-medium">
-            <p className="font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'var(--font-display)' }}>
+            <a href="https://rankly.frozenn.in/" className="font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100 hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors" style={{ fontFamily: 'var(--font-display)' }}>
               Rankly
-            </p>
+            </a>
             <p>
               Built by <span className="font-black text-zinc-900 dark:text-zinc-50">Sabareesh</span> ·{' '}
               <a href="https://discord.com/users/1272910357517701147" className="hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors">Discord</a>{' '}·{' '}
