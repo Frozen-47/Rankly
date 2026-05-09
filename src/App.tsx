@@ -1,158 +1,176 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * RANKLY — Redesigned with a solid, editorial brutalist aesthetic
+ * Tailwind CSS · Motion/React · Lucide Icons
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Loader2, Info, Star, Bookmark, BookmarkCheck, Sun, Moon } from 'lucide-react';
+import {
+  Search, Loader2, Info, Star, Bookmark, BookmarkCheck,
+  Sun, Moon, ArrowRight, Zap, BarChart2, Shield,
+} from 'lucide-react';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import { compareProducts } from './services/groqService';
 import { ComparisonData, Product } from './types';
 import { db } from './services/dbService';
 
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
 const ALL_TRENDING = [
-  {
-    category: "Laptops",
-    query: "MacBook Pro M3 vs Dell XPS 14",
-    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    category: "Smartphones",
-    query: "iPhone 15 Pro Max vs Galaxy S24 Ultra",
-    image: "https://images.unsplash.com/photo-1592899677974-c466c4f1d019?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    category: "Headphones",
-    query: "Sony WH-1000XM5 vs AirPods Max",
-    image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    category: "Cameras",
-    query: "Sony A7IV vs Canon R6 Mark II",
-    image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    category: "Tablets",
-    query: "iPad Pro M4 vs Galaxy Tab S9 Ultra",
-    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    category: "Watches",
-    query: "Apple Watch Ultra 2 vs Garmin Epix",
-    image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=400&q=80"
-  }
+  { category: "Laptops",     query: "MacBook Pro M3 vs Dell XPS 14",          image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80" },
+  { category: "Smartphones", query: "iPhone 15 Pro Max vs Galaxy S24 Ultra",   image: "https://images.unsplash.com/photo-1592899677974-c466c4f1d019?auto=format&fit=crop&w=400&q=80" },
+  { category: "Headphones",  query: "Sony WH-1000XM5 vs AirPods Max",         image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80" },
+  { category: "Cameras",     query: "Sony A7IV vs Canon R6 Mark II",           image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80" },
+  { category: "Tablets",     query: "iPad Pro M4 vs Galaxy Tab S9 Ultra",      image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80" },
+  { category: "Watches",     query: "Apple Watch Ultra 2 vs Garmin Epix",      image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=400&q=80" },
 ];
 
-function ProductCard({ product, index = 0 }: { product: Product, index?: number }) {
+/* ─────────────────────────────────────────
+   PRODUCT CARD
+───────────────────────────────────────── */
+function ProductCard({ product, index = 0 }: { product: Product; index?: number }) {
   const { isSignedIn, user } = useUser();
   const [isSaved, setIsSaved] = useState(false);
 
   const handleSave = async () => {
     if (!isSignedIn || !user) return;
     setIsSaved(!isSaved);
-    if (!isSaved) {
-      await db.saveFavorite(user.id, product);
-    } else {
-      await db.removeFavorite(user.id, product.id);
-    }
+    if (!isSaved) await db.saveFavorite(user.id, product);
+    else          await db.removeFavorite(user.id, product.id);
   };
 
+  const score = product.ranklyScore;
+  const accent = score > 80 ? 'bg-emerald-500' : score > 60 ? 'bg-amber-400' : 'bg-rose-500';
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
-      className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 relative overflow-hidden group shadow-sm"
+      transition={{ delay: index * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative flex flex-col bg-white dark:bg-zinc-900 border-2 border-zinc-900 dark:border-zinc-100 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] transition-all duration-200 overflow-hidden"
       id={`product-${product.id}`}
     >
-      {isSignedIn && (
-        <button 
-          onClick={handleSave}
-          className="absolute top-6 right-6 z-10 p-2 rounded-full bg-muted border border-border text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-          title={isSaved ? "Remove from favorites" : "Save to favorites"}
-        >
-          {isSaved ? <BookmarkCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> : <Bookmark className="w-4 h-4" />}
-        </button>
-      )}
-      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-        <Info className="w-20 h-20" />
-      </div>
-      
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-2xl font-semibold text-foreground leading-tight">{product.name}</h3>
-          <p className="text-muted-foreground text-xs font-mono mt-1 tracking-wider uppercase">{product.price}</p>
-        </div>
-        <div className="flex items-center gap-1 bg-muted border border-border px-2 py-1 rounded-md">
-          <Star className="w-3 h-3 fill-indigo-500 text-indigo-500" />
-          <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400">{product.rating}</span>
-        </div>
-      </div>
+      {/* Score stripe */}
+      <div className={`h-1.5 w-full ${accent}`} />
 
-      <p className="text-xs text-foreground/70 line-clamp-3 leading-relaxed">
-        "{product.summary}"
-      </p>
+      <div className="p-6 flex flex-col gap-5 flex-1">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            {product.url && product.url !== "https://example.com" ? (
+              <a href={product.url} target="_blank" rel="noopener noreferrer" className="hover:underline decoration-zinc-500 underline-offset-4">
+                <h3 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight font-[family-name:var(--font-display)]">
+                  {product.name}
+                </h3>
+              </a>
+            ) : (
+              <h3 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight font-[family-name:var(--font-display)]">
+                {product.name}
+              </h3>
+            )}
+            <p className="mt-1 text-xs font-mono text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+              {product.price}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <div className="flex items-center gap-1 border-2 border-zinc-900 dark:border-zinc-100 px-2 py-0.5">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-black font-mono text-zinc-900 dark:text-zinc-50">{product.rating}</span>
+            </div>
+            {isSignedIn && (
+              <button
+                onClick={handleSave}
+                className="p-1.5 border-2 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-colors"
+                title={isSaved ? 'Remove' : 'Save'}
+              >
+                {isSaved
+                  ? <BookmarkCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  : <Bookmark className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        </div>
 
-      <div className="flex gap-4 mt-2">
-        <div className="flex-1">
-          <h4 className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-2">Key Strengths</h4>
-          <ul className="space-y-1">
-            {product.pros.slice(0, 3).map((pro, i) => (
-              <li key={i} className="text-[11px] flex items-center gap-2">
-                <div className="w-1 h-1 bg-indigo-500 rounded-full shrink-0" />
-                <span className="truncate text-foreground/80">{pro}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex-1">
-          <h4 className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground font-bold mb-2">Limitations</h4>
-          <ul className="space-y-1">
-            {product.cons.slice(0, 3).map((con, i) => (
-              <li key={i} className="text-[11px] flex items-center gap-2 text-foreground/60">
-                <div className="w-1 h-1 bg-zinc-400 dark:bg-zinc-700 rounded-full shrink-0" />
-                <span className="truncate">{con}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+        {/* Summary */}
+        <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-3 border-l-4 border-zinc-200 dark:border-zinc-700 pl-3 italic">
+          {product.summary}
+        </p>
 
-      <div className="mt-4 pt-4 border-t border-border/60 flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground font-bold">Rankly Score</span>
-          <span className="text-4xl font-semibold text-foreground">
-            {product.ranklyScore}
-          </span>
+        {/* Pros / Cons */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Strengths</p>
+            <ul className="space-y-1">
+              {product.pros.slice(0, 3).map((pro, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-700 dark:text-zinc-300">
+                  <span className="mt-1 w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0" />
+                  <span className="leading-tight">{pro}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-1.5">Limitations</p>
+            <ul className="space-y-1">
+              {product.cons.slice(0, 3).map((con, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-500">
+                  <span className="mt-1 w-1.5 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full shrink-0" />
+                  <span className="leading-tight">{con}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <div className="w-12 h-1 bg-muted border border-border rounded-full overflow-hidden self-end mb-2">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${product.ranklyScore}%` }}
-            className={`h-full ${product.ranklyScore > 80 ? 'bg-indigo-500' : product.ranklyScore > 60 ? 'bg-purple-500' : 'bg-fuchsia-500'}`}
-          />
+
+        {/* Score bar */}
+        <div className="mt-auto pt-4 border-t-2 border-dashed border-zinc-200 dark:border-zinc-700 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400">Rankly Score</p>
+            <p className="text-5xl font-black text-zinc-900 dark:text-zinc-50 leading-none font-[family-name:var(--font-display)]">
+              {score}
+            </p>
+          </div>
+          <div className="flex-1 mb-1.5">
+            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${score}%` }}
+                transition={{ delay: index * 0.08 + 0.3, duration: 0.7, ease: 'easeOut' }}
+                className={`h-full ${accent}`}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
   );
 }
 
+/* ─────────────────────────────────────────
+   COMPARISON MATRIX
+───────────────────────────────────────── */
 function ComparisonMatrix({ data }: { data: ComparisonData }) {
   return (
-    <div className="flex flex-col gap-6" id="comparison-matrix">
-      <motion.div 
+    <div className="flex flex-col gap-6">
+      {/* Table */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="overflow-x-auto pb-4 bg-card border border-border rounded-xl p-0 overflow-hidden shadow-sm"
+        transition={{ delay: 0.25 }}
+        className="overflow-x-auto border-2 border-zinc-900 dark:border-zinc-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]"
       >
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
-            <tr className="border-b border-border">
-              <th className="p-8 text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-bold w-1/4">Core Specifications</th>
+            <tr className="border-b-2 border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100">
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-100 dark:text-zinc-900 w-1/4">
+                Specification
+              </th>
               {data.products.map(p => (
-                <th key={p.id} className="p-8 font-semibold text-lg text-foreground">
+                <th key={p.id} className="px-6 py-4 font-black text-sm uppercase tracking-wide text-zinc-100 dark:text-zinc-900">
                   {p.name}
                 </th>
               ))}
@@ -160,10 +178,15 @@ function ComparisonMatrix({ data }: { data: ComparisonData }) {
           </thead>
           <tbody>
             {data.commonSpecs.map((spec, idx) => (
-              <tr key={spec} className="hover:bg-muted/30 transition-colors group">
-                <td className="p-8 text-sm text-foreground/70 font-medium border-b border-border/40 group-last:border-0">{spec}</td>
+              <tr
+                key={spec}
+                className={`border-b border-zinc-200 dark:border-zinc-800 last:border-0 ${idx % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-zinc-50 dark:bg-zinc-800/50'}`}
+              >
+                <td className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  {spec}
+                </td>
                 {data.products.map(p => (
-                  <td key={p.id} className="p-8 text-sm font-mono text-foreground/90 border-b border-border/40 group-last:border-0">
+                  <td key={p.id} className="px-6 py-4 text-sm font-mono text-zinc-800 dark:text-zinc-200">
                     {p.specs[spec] || '—'}
                   </td>
                 ))}
@@ -172,18 +195,18 @@ function ComparisonMatrix({ data }: { data: ComparisonData }) {
           </tbody>
         </table>
       </motion.div>
-      
-      <motion.div 
+
+      {/* Verdict */}
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="p-10 bg-card border border-border rounded-xl border-l-indigo-500 border-l-2 shadow-sm"
-        id="expert-verdict"
+        transition={{ delay: 0.4 }}
+        className="border-2 border-zinc-900 dark:border-zinc-100 p-8 bg-zinc-900 dark:bg-zinc-100 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.15)]"
       >
-        <h3 className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-bold mb-6 flex items-center gap-3">
-          <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-          Rankly AI Synthesis
-        </h3>
-        <p className="text-xl leading-relaxed text-foreground/90 max-w-4xl">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 dark:text-zinc-600 mb-4 flex items-center gap-2">
+          <Zap className="w-3 h-3 fill-amber-400 text-amber-400" /> Rankly AI Synthesis
+        </p>
+        <p className="text-xl leading-relaxed text-zinc-50 dark:text-zinc-900 max-w-4xl font-medium">
           "{data.verdict}"
         </p>
       </motion.div>
@@ -191,428 +214,446 @@ function ComparisonMatrix({ data }: { data: ComparisonData }) {
   );
 }
 
+/* ─────────────────────────────────────────
+   SEARCH INPUT (reusable)
+───────────────────────────────────────── */
+function SearchBar({
+  value, onChange, onSubmit, loading, size = 'lg',
+}: {
+  value: string; onChange: (v: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  loading: boolean; size?: 'sm' | 'lg';
+}) {
+  return (
+    <form onSubmit={onSubmit} className="relative w-full" id="search-form">
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={size === 'lg' ? 'Paste URLs or type products to compare…' : 'Search products…'}
+        className={`w-full border-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 font-medium placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none pr-14 transition-shadow hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.2)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:focus:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.2)] ${size === 'lg' ? 'py-4 pl-6 text-lg' : 'py-2.5 pl-4 text-sm'}`}
+      />
+      <button
+        type="submit"
+        disabled={loading}
+        className={`absolute top-1/2 -translate-y-1/2 right-2 bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-40 transition-colors flex items-center justify-center ${size === 'lg' ? 'p-2.5' : 'p-1.5'}`}
+      >
+        {loading ? <Loader2 className={`animate-spin ${size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'}`} /> : <Search className={size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'} />}
+      </button>
+    </form>
+  );
+}
+
+/* ─────────────────────────────────────────
+   MAIN APP
+───────────────────────────────────────── */
 export default function App() {
   const { user } = useUser();
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<ComparisonData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isDark, setIsDark] = useState(true);
+  const [query, setQuery]               = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [data, setData]                 = useState<ComparisonData | null>(null);
+  const [error, setError]               = useState<string | null>(null);
+  const [isDark, setIsDark]             = useState(true);
   const [trendingIndex, setTrendingIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTrendingIndex((prev) => (prev + 3) % ALL_TRENDING.length);
-    }, 6000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setTrendingIndex(p => (p + 3) % ALL_TRENDING.length), 5500);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
-  const executeSearch = async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+  useEffect(() => {
+    // Read query from URL to make the site dynamically shareable
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) {
+      setQuery(q);
+      executeSearch(q, false);
+    }
+  }, []);
+
+  const executeSearch = async (q: string, updateUrl = true) => {
+    if (!q.trim()) return;
+    setQuery(q);
     
-    setQuery(searchQuery);
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('q', q);
+      window.history.pushState({}, '', url);
+    }
+
     setLoading(true);
     setError(null);
     try {
-      if (user) {
-        await db.saveSearch(user.id, searchQuery);
-      }
-      const result = await compareProducts(searchQuery);
-      setData(result);
+      if (user) await db.saveSearch(user.id, q);
+      setData(await compareProducts(q));
     } catch (err: any) {
-      console.error(err);
-      const message = err?.message || 'Failed to analyze products. Please try another search term or link.';
-      setError(message);
+      setError(err?.message || 'Analysis failed. Try a different query.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    executeSearch(query);
-  };
+  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); executeSearch(query); };
 
+  /* ── Fonts injected via style tag ── */
   return (
-    <div className="min-h-screen relative flex flex-col w-full overflow-x-hidden bg-background text-foreground transition-colors duration-500" id="rankly-root">
-      
-      {/* Background Blobs */}
-      <div className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-[-50]">
-        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
-        <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-purple-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-fuchsia-500/20 rounded-full mix-blend-screen filter blur-[100px] opacity-70"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+        :root { --font-display: 'Barlow Condensed', sans-serif; }
+        * { box-sizing: border-box; }
+      `}</style>
 
-      <div className="p-8 md:p-12 flex flex-col gap-10 flex-1 w-full">
-        {/* Header */}
-        <div className="flex justify-center w-full pt-4 md:pt-6 px-4 md:px-0">
-          <motion.header 
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 bg-background/80 backdrop-blur-md border border-border px-4 md:px-6 py-4 md:py-3 rounded-2xl md:rounded-full w-full max-w-5xl shadow-sm dark:shadow-2xl dark:shadow-black/50"
-          >
-            <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-foreground rounded-md flex items-center justify-center">
-                  <div className="w-3 h-3 bg-background rounded-sm" />
-                </div>
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">Rankly</h1>
+      <div
+        className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors duration-300"
+        style={{ fontFamily: "'DM Sans', sans-serif" }}
+      >
+        {/* ══════════════ HEADER ══════════════ */}
+        <header className="sticky top-0 z-50 border-b-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-6">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center">
+                <BarChart2 className="w-4 h-4 text-zinc-50 dark:text-zinc-900" />
               </div>
-              <div className="md:hidden flex items-center gap-4">
-                <button 
-                  onClick={() => setIsDark(!isDark)} 
-                  className="hover:text-foreground transition-colors p-1 text-muted-foreground"
-                  title="Toggle Theme"
-                >
-                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-                <SignedIn>
-                  <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-full border border-border" } }} />
-                </SignedIn>
-              </div>
+              <span
+                className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Rankly
+              </span>
             </div>
 
+            {/* Inline search (results view only) */}
             {(data || loading) && (
-              <div className="flex-1 w-full max-w-full md:max-w-md hidden md:block">
-                <form onSubmit={handleSearch} className="relative group" id="search-form">
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Paste URLs or search..."
-                    className="w-full bg-muted/50 md:bg-transparent border border-border md:border-none py-2.5 md:py-2 px-4 rounded-lg md:rounded-none text-sm focus:outline-none focus:border-zinc-500 placeholder:text-muted-foreground text-foreground transition-all"
-                  />
-                  <div className="absolute right-4 top-3 md:top-2 text-muted-foreground group-focus-within:text-foreground transition-colors">
-                    <Search className="w-4 h-4" />
-                  </div>
-                  {loading && (
-                    <div className="absolute right-10 top-3 md:top-2 text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    </div>
-                  )}
-                </form>
+              <div className="flex-1 hidden md:block max-w-md">
+                <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} loading={loading} size="sm" />
               </div>
             )}
 
-            <nav className="flex gap-4 md:gap-6 text-sm font-medium text-muted-foreground items-center justify-between w-full md:w-auto">
-              <div className="flex gap-4 md:gap-6">
-                <a href="#about" className="hover:text-foreground transition-colors">About</a>
-                <a href="#use-cases" className="hover:text-foreground transition-colors">Use Case</a>
-              </div>
-              
-              <div className="hidden md:flex items-center gap-6">
-                <button 
-                  onClick={() => setIsDark(!isDark)} 
-                  className="hover:text-foreground transition-colors p-1"
-                  title="Toggle Theme"
-                >
-                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
+            <nav className="ml-auto flex items-center gap-6 text-sm font-semibold text-zinc-600 dark:text-zinc-400">
+              <a href="#about"     className="hidden md:inline hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors uppercase tracking-wide text-xs">About</a>
+              <a href="#use-cases" className="hidden md:inline hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors uppercase tracking-wide text-xs">Use Cases</a>
 
-                <SignedIn>
-                  <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-full border border-border" } }} />
-                </SignedIn>
-                <SignedOut>
-                  <SignInButton mode="modal">
-                    <button className="bg-foreground text-background px-5 py-2 rounded-full hover:opacity-90 transition-opacity font-medium">Get Started</button>
-                  </SignInButton>
-                </SignedOut>
-              </div>
-
-              <div className="md:hidden">
-                <SignedOut>
-                  <SignInButton mode="modal">
-                    <button className="bg-foreground text-background px-4 py-1.5 text-xs rounded-full hover:opacity-90 transition-opacity font-medium">Get Started</button>
-                  </SignInButton>
-                </SignedOut>
-              </div>
-            </nav>
-          </motion.header>
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 min-h-0">
-          <AnimatePresence mode="wait">
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-6 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-center mb-8 font-medium"
+              <button
+                onClick={() => setIsDark(!isDark)}
+                className="p-1.5 border-2 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-colors"
+                title="Toggle theme"
               >
-                {error}
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              <SignedIn>
+                <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 border-2 border-zinc-900 dark:border-zinc-100 rounded-none" } }} />
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 px-5 py-2 text-xs font-black uppercase tracking-widest hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-colors border-2 border-zinc-900 dark:border-zinc-100">
+                    Get Started
+                  </button>
+                </SignInButton>
+              </SignedOut>
+            </nav>
+          </div>
+        </header>
+
+        {/* ══════════════ MAIN ══════════════ */}
+        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-10">
+          <AnimatePresence mode="wait">
+
+            {/* Error */}
+            {error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mb-8 border-2 border-rose-600 bg-rose-50 dark:bg-rose-950/30 p-5 text-rose-700 dark:text-rose-400 text-sm font-medium flex items-center gap-3"
+              >
+                <Info className="w-4 h-4 shrink-0" /> {error}
               </motion.div>
             )}
 
+            {/* ── RESULTS VIEW ── */}
             {data ? (
-              <div className="grid grid-cols-12 gap-8">
-                {/* Product Grid & Matrix */}
-                <section className="col-span-12 lg:col-span-9 flex flex-col gap-10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {data.products.map((product, idx) => (
-                      <ProductCard key={product.id} product={product} index={idx} />
-                    ))}
+              <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-12">
+                {/* section header */}
+                <div className="flex items-center justify-between border-b-2 border-zinc-900 dark:border-zinc-100 pb-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 mb-1">Analysis for</p>
+                    <h2
+                      className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-tight text-zinc-900 dark:text-zinc-50"
+                      style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                      {query}
+                    </h2>
                   </div>
-                  
-                  <div className="flex flex-col gap-6">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-2xl font-semibold text-foreground">Comparison Matrix</h2>
-                      <div className="flex gap-3">
-                        <span className="bg-muted text-muted-foreground text-[9px] px-3 py-1.5 rounded-full uppercase tracking-widest border border-border">
-                          {data.products.length} Products Analyzed
-                        </span>
-                      </div>
+                  <span className="hidden md:block border-2 border-zinc-900 dark:border-zinc-100 px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white dark:bg-zinc-900">
+                    {data.products.length} Products
+                  </span>
+                </div>
+
+                {/* grid + sidebar */}
+                <div className="grid grid-cols-12 gap-8">
+                  <section className="col-span-12 lg:col-span-9 flex flex-col gap-10">
+                    {/* product cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {data.products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
                     </div>
-                    <ComparisonMatrix data={data} />
+
+                    {/* matrix */}
+                    <div className="flex flex-col gap-4">
+                      <h2
+                        className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50 border-b-2 border-dashed border-zinc-300 dark:border-zinc-700 pb-3"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                      >
+                        Comparison Matrix
+                      </h2>
+                      <ComparisonMatrix data={data} />
+                    </div>
+                  </section>
+
+                  {/* sidebar */}
+                  <motion.aside
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="col-span-12 lg:col-span-3 flex flex-col gap-6"
+                  >
+                    {/* top score */}
+                    <div className="border-2 border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)]">
+                      <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-400 dark:text-zinc-600 mb-2">Top Value Score</p>
+                      <p
+                        className="text-8xl font-black text-zinc-50 dark:text-zinc-900 leading-none"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                      >
+                        {Math.max(...data.products.map(p => p.ranklyScore))}
+                      </p>
+                      <div className="mt-4 h-1.5 bg-zinc-800 dark:bg-zinc-300">
+                        <div
+                          className="h-full bg-emerald-400"
+                          style={{ width: `${Math.max(...data.products.map(p => p.ranklyScore))}%` }}
+                        />
+                      </div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-600 mt-2">Value-to-Performance</p>
+                    </div>
+
+                    {/* ai insights */}
+                    <div className="border-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 p-6 flex flex-col gap-5 flex-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+                      <p
+                        className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                      >
+                        AI Insights
+                      </p>
+                      <div className="flex flex-col gap-4">
+                        {data.products.slice(0, 2).map((p, i) => (
+                          <div key={p.id} className={`p-4 border-l-4 ${i === 0 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' : 'border-amber-400 bg-amber-50 dark:bg-amber-950/20'}`}>
+                            <p className="text-xs font-black uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-1">{p.name}</p>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                              Ranked as the {i === 0 ? 'premium choice' : 'most balanced option'} based on market data.
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <a
+                        href="https://github.com/Frozen-47"
+                        className="mt-auto border-2 border-zinc-900 dark:border-zinc-100 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-center hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 transition-colors flex items-center justify-center gap-2"
+                      >
+                        GitHub <ArrowRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </motion.aside>
+                </div>
+              </motion.div>
+
+            ) : loading ? (
+              /* ── LOADING ── */
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-48 gap-5">
+                <div className="border-2 border-zinc-900 dark:border-zinc-100 p-5">
+                  <Loader2 className="w-10 h-10 animate-spin text-zinc-900 dark:text-zinc-50" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400 animate-pulse">
+                  Analyzing Product Data…
+                </p>
+              </motion.div>
+
+            ) : (
+              /* ── HERO / LANDING ── */
+              <motion.div key="hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-28 pb-20">
+
+                {/* Hero */}
+                <section className="flex flex-col items-start gap-8 pt-12 md:pt-20 max-w-3xl">
+                  <div className="inline-flex items-center gap-2 border-2 border-zinc-900 dark:border-zinc-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.25em] bg-amber-400 text-zinc-900">
+                    <Zap className="w-3 h-3" /> AI-Powered Comparison Engine
+                  </div>
+                  <h1
+                    className="text-6xl sm:text-7xl md:text-8xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 leading-[0.9]"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    Decipher<br />
+                    <span className="text-zinc-400 dark:text-zinc-600">the Market.</span>
+                  </h1>
+                  <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-xl leading-relaxed font-medium">
+                    Search or paste product URLs to reveal data-driven comparisons, specs matrices, and AI verdicts — instantly.
+                  </p>
+                  <div className="w-full max-w-xl">
+                    <SearchBar value={query} onChange={setQuery} onSubmit={handleSearch} loading={loading} size="lg" />
                   </div>
                 </section>
 
-                {/* Sidebar Analysis */}
-                <motion.aside 
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                  className="col-span-12 lg:col-span-3 flex flex-col gap-8"
-                >
-                  <div className="bg-card border border-border rounded-xl p-8 flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-60"></div>
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-4 font-bold">Top Value Pick</span>
-                    <div className="text-8xl font-bold text-foreground leading-none mb-2 tracking-tighter">
-                      {Math.max(...data.products.map(p => p.ranklyScore))}
-                    </div>
-                    <span className="text-[11px] text-foreground/70 mb-8 font-medium tracking-wide uppercase">Rankly Intelligence</span>
-                    <div className="w-full space-y-3">
-                      <div className="h-1 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-indigo-500 opacity-80" 
-                          style={{ width: `${Math.max(...data.products.map(p => p.ranklyScore))}%` }} 
+                {/* Trending */}
+                <section className="w-full">
+                  <div className="flex items-center justify-between mb-5 border-b-2 border-dashed border-zinc-300 dark:border-zinc-700 pb-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> Trending Now
+                    </p>
+                    <div className="flex gap-1.5">
+                      {Array.from({ length: ALL_TRENDING.length / 3 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-1.5 transition-all duration-500 ${Math.floor(trendingIndex / 3) === i ? 'w-6 bg-zinc-900 dark:bg-zinc-100' : 'w-1.5 bg-zinc-300 dark:bg-zinc-700'}`}
                         />
-                      </div>
-                      <p className="text-[9px] text-muted-foreground text-center uppercase tracking-[0.2em] font-bold">
-                        Value-to-Performance Ratio
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-xl p-8 flex-1 flex flex-col shadow-sm">
-                    <h3 className="font-semibold text-foreground text-xl mb-6">AI Insights</h3>
-                    <div className="space-y-6 flex-1">
-                      {data.products.slice(0, 2).map((p, i) => (
-                        <div key={p.id} className="flex gap-4">
-                          <div className={`w-5 h-5 rounded-full ${i === 0 ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' : 'bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400'} flex items-center justify-center shrink-0 border border-current/10`}>
-                            <div className={`w-1.5 h-1.5 ${i === 0 ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-purple-500 dark:bg-purple-400'} rounded-full`}></div>
-                          </div>
-                          <p className="text-xs text-foreground/70 leading-relaxed font-medium">
-                            <strong className="text-foreground">{p.name}</strong> is identified as the {i === 0 ? 'premium choice' : 'most balanced option'} based on current market sentiment.
-                          </p>
-                        </div>
                       ))}
                     </div>
-                    
-                    <button className="bg-transparent border border-border text-foreground px-6 py-3 rounded-full hover:bg-muted transition-colors w-full mt-10 font-medium">
-                      Git Repository
-                    </button>
                   </div>
-                </motion.aside>
-              </div>
-            ) : !loading ? (
-              <div className="flex flex-col gap-32 pb-20 pt-20">
-                {/* Hero Section */}
-                <div className="flex flex-col items-center justify-center gap-8 text-center min-h-[50vh] relative">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-2xl bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                  >
-                    <h2 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-foreground via-foreground/90 to-muted-foreground leading-tight tracking-tighter mb-6 pb-2">
-                      Deciphering<br />
-                      <span className="opacity-80 font-bold">the Market.</span>
-                    </h2>
-                    <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed mb-10">
-                      The sophisticated engine for online researchers. Search or paste URLs to reveal the hidden value in any product landscape.
-                    </p>
-                    
-                    <form onSubmit={handleSearch} className="relative w-full max-w-2xl mx-auto flex items-center shadow-2xl rounded-full">
-                      <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Paste URLs or search products..."
-                        className="w-full bg-card/60 backdrop-blur-xl border border-border/50 focus:border-indigo-500/50 hover:border-border transition-all rounded-full py-4 pl-8 pr-16 text-lg outline-none text-foreground placeholder:text-muted-foreground"
-                      />
-                      <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="absolute right-3 bg-foreground text-background hover:opacity-90 disabled:opacity-50 p-2.5 rounded-full transition-opacity flex items-center justify-center"
-                      >
-                        <Search className="w-5 h-5" />
-                      </button>
-                    </form>
-                  </motion.div>
-                  
-                  <div className="w-full max-w-4xl mt-16">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                        Trending Now
-                      </h3>
-                      <div className="flex gap-1">
-                        {Array.from({ length: ALL_TRENDING.length / 3 }).map((_, i) => (
-                          <div key={i} className={`h-1 rounded-full transition-all duration-500 ${Math.floor(trendingIndex / 3) === i ? 'w-4 bg-indigo-500' : 'w-1 bg-border'}`} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <AnimatePresence mode="popLayout">
-                        {ALL_TRENDING.slice(trendingIndex, trendingIndex + 3).map((item, i) => (
-                          <motion.button 
-                            key={item.query}
-                            onClick={() => executeSearch(item.query)}
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: -20 }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="glass-card rounded-2xl p-4 flex flex-col gap-4 text-left hover:border-indigo-500/50 hover:shadow-indigo-500/20 transition-all group overflow-hidden relative" 
-                          >
-                            <div className="w-full h-32 rounded-xl overflow-hidden relative">
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
-                              <img src={item.image} alt={item.category} className="w-full h-full object-cover transition-opacity duration-700 group-hover:opacity-80" />
-                              <p className="absolute bottom-3 left-3 z-20 text-[10px] text-white/90 uppercase tracking-widest font-bold drop-shadow-md">{item.category}</p>
-                            </div>
-                            <div className="px-1">
-                              <p className="text-sm text-foreground font-semibold line-clamp-2 group-hover:text-indigo-500 transition-colors">{item.query}</p>
-                            </div>
-                          </motion.button>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </div>
-
-                {/* About Section */}
-                <motion.section 
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.8 }}
-                  className="flex flex-col lg:flex-row gap-16 items-center max-w-6xl mx-auto w-full px-6 py-20"
-                  id="about"
-                >
-                  <div className="flex-1 space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest shadow-sm">
-                      <Star className="w-4 h-4" /> About Rankly
-                    </div>
-                    <h3 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight leading-tight">
-                      Intelligence at the <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">speed of thought.</span>
-                    </h3>
-                    <p className="text-muted-foreground leading-relaxed text-lg md:text-xl font-medium">
-                      Rankly isn't just a search engine; it's an automated research assistant powered by Groq's lightning-fast LPU inference engine. We crawl, parse, and synthesize complex product data in milliseconds.
-                    </p>
-                  </div>
-                  <div className="flex-1 w-full glass-card rounded-3xl p-10 relative overflow-hidden">
-                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none" />
-                    <div className="space-y-8 relative z-10">
-                      {[
-                        { title: "Real-time Synthesis", desc: "No pre-baked databases. We analyze live URLs instantly with AI." },
-                        { title: "Unbiased Scoring", desc: "Our proprietary AI evaluates objective strengths and weaknesses without ads." },
-                        { title: "Standardized Metrics", desc: "We normalize disparate specs into an easy-to-read, clean matrix." }
-                      ].map((item, i) => (
-                        <motion.div 
-                          key={i} 
-                          initial={{ opacity: 0, x: 20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.15 }}
-                          viewport={{ once: true }}
-                          className="flex gap-6 items-start group"
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <AnimatePresence mode="popLayout">
+                      {ALL_TRENDING.slice(trendingIndex, trendingIndex + 3).map((item) => (
+                        <motion.button
+                          key={item.query}
+                          onClick={() => executeSearch(item.query)}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -16 }}
+                          transition={{ duration: 0.35, ease: 'easeOut' }}
+                          className="group text-left border-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all duration-150 overflow-hidden"
                         >
-                          <div className="w-12 h-12 rounded-full bg-background border border-border flex items-center justify-center shrink-0 text-foreground shadow-sm group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all duration-300">
-                            <span className="font-bold">{i + 1}</span>
+                          <div className="relative h-28 overflow-hidden">
+                            <img src={item.image} alt={item.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <div className="absolute inset-0 bg-zinc-900/50" />
+                            <span className="absolute bottom-2 left-3 text-[9px] font-black uppercase tracking-[0.2em] text-white/90 bg-zinc-900/70 px-2 py-0.5">
+                              {item.category}
+                            </span>
                           </div>
-                          <div>
-                            <h4 className="text-foreground text-lg font-semibold mb-2 group-hover:text-indigo-500 transition-colors">{item.title}</h4>
-                            <p className="text-base text-muted-foreground leading-relaxed">{item.desc}</p>
+                          <div className="p-4">
+                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 line-clamp-2 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors leading-tight">
+                              {item.query}
+                            </p>
                           </div>
-                        </motion.div>
+                        </motion.button>
                       ))}
-                    </div>
+                    </AnimatePresence>
                   </div>
-                </motion.section>
+                </section>
 
-                {/* Use Cases Section */}
-                <motion.section 
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.8 }}
-                  className="max-w-6xl mx-auto w-full px-6 py-10"
-                  id="use-cases"
+                {/* About */}
+                <section
+                  id="about"
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start border-t-2 border-zinc-900 dark:border-zinc-100 pt-16"
                 >
-                  <div className="text-center mb-20 space-y-6">
-                    <h3 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight">Built for every workflow.</h3>
-                    <p className="text-muted-foreground text-xl max-w-3xl mx-auto font-medium">From casual shoppers to enterprise procurement, Rankly scales to meet your research needs.</p>
+                  <div className="flex flex-col gap-6">
+                    <span className="inline-block text-[10px] font-black uppercase tracking-[0.25em] border-2 border-zinc-900 dark:border-zinc-100 px-3 py-1.5 self-start bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900">
+                      About Rankly
+                    </span>
+                    <h3
+                      className="text-4xl md:text-5xl font-black uppercase tracking-tight leading-tight text-zinc-900 dark:text-zinc-50"
+                      style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                      Intelligence at the<br />
+                      <span className="text-zinc-400 dark:text-zinc-500">Speed of Thought.</span>
+                    </h3>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md">
+                      Rankly uses Groq's LPU inference engine to crawl, parse, and synthesize complex product data in milliseconds — delivering unbiased verdicts you can trust.
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="flex flex-col gap-0 border-2 border-zinc-900 dark:border-zinc-100 divide-y-2 divide-zinc-900 dark:divide-zinc-100">
                     {[
-                      {
-                        title: "Consumer Tech",
-                        role: "For Shoppers",
-                        desc: "Stop reading 10 different affiliate blogs. Paste the Amazon URLs of three laptops and instantly see which one actually has the better value-to-performance ratio."
-                      },
-                      {
-                        title: "B2B Software",
-                        role: "For Founders",
-                        desc: "Choosing between Stripe, Paddle, and LemonSqueezy? Rankly breaks down the API limitations, pricing tiers, and hidden fees into a single matrix."
-                      },
-                      {
-                        title: "Market Research",
-                        role: "For Analysts",
-                        desc: "Export our raw AI synthesized matrices directly to PDF or CSV to include in your industry reports and stakeholder presentations."
-                      }
-                    ].map((useCase, i) => (
-                      <motion.div 
+                      { icon: Zap,       title: "Real-time Synthesis",    desc: "No pre-baked databases. We analyze live URLs instantly." },
+                      { icon: Shield,    title: "Unbiased Scoring",       desc: "Objective AI evaluation — zero ads, zero affiliate bias." },
+                      { icon: BarChart2, title: "Standardized Metrics",   desc: "Disparate specs normalized into one clean, readable matrix." },
+                    ].map(({ icon: Icon, title, desc }, i) => (
+                      <motion.div
                         key={i}
-                        className="glass-card rounded-3xl p-8 hover:border-indigo-500/50 hover:shadow-indigo-500/10 transition-all duration-300 group relative overflow-hidden"
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-5 p-6 group hover:bg-zinc-900 dark:hover:bg-zinc-100 transition-colors"
                       >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-colors" />
-                        <span className="inline-block px-3 py-1 rounded-full bg-background border border-border text-[10px] uppercase tracking-[0.2em] text-indigo-500 dark:text-indigo-400 font-bold mb-6 shadow-sm">
-                          {useCase.role}
-                        </span>
-                        <h4 className="text-2xl font-bold text-foreground mb-4">{useCase.title}</h4>
-                        <p className="text-muted-foreground leading-relaxed text-base">
-                          {useCase.desc}
-                        </p>
+                        <div className="border-2 border-zinc-900 dark:border-zinc-100 group-hover:border-zinc-50 dark:group-hover:border-zinc-900 p-2 shrink-0">
+                          <Icon className="w-4 h-4 text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-50 dark:group-hover:text-zinc-900" />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm uppercase tracking-wide text-zinc-900 dark:text-zinc-50 group-hover:text-zinc-50 dark:group-hover:text-zinc-900 mb-1">{title}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-400 dark:group-hover:text-zinc-600 leading-relaxed">{desc}</p>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
-                </motion.section>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-60 gap-4">
-                  <Loader2 className="w-12 h-12 text-muted-foreground animate-spin" />
-                  <span className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground font-bold animate-pulse">Analyzing Product Data...</span>
-              </div>
+                </section>
+
+                {/* Use Cases */}
+                <section
+                  id="use-cases"
+                  className="border-t-2 border-zinc-900 dark:border-zinc-100 pt-16 flex flex-col gap-10"
+                >
+                  <div>
+                    <h3
+                      className="text-4xl md:text-5xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50"
+                      style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                      Built for Every Workflow.
+                    </h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-lg mt-3">From casual shoppers to enterprise procurement.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-2 border-zinc-900 dark:border-zinc-100 divide-y-2 md:divide-y-0 md:divide-x-2 divide-zinc-900 dark:divide-zinc-100">
+                    {[
+                      { role: "For Shoppers",  title: "Consumer Tech",   desc: "Stop reading affiliate blogs. Paste Amazon URLs and get instant value-to-performance breakdowns." },
+                      { role: "For Founders",  title: "B2B Software",    desc: "Compare Stripe vs Paddle vs LemonSqueezy: API limits, pricing tiers, hidden fees — in one matrix." },
+                      { role: "For Analysts",  title: "Market Research", desc: "Export AI-synthesized matrices to PDF or CSV for industry reports and stakeholder decks." },
+                    ].map((uc, i) => (
+                      <div key={i} className="p-8 flex flex-col gap-4 hover:bg-zinc-900 dark:hover:bg-zinc-100 group transition-colors">
+                        <span className="text-[9px] font-black uppercase tracking-[0.25em] border-2 border-zinc-900 dark:border-zinc-100 group-hover:border-zinc-50 dark:group-hover:border-zinc-900 group-hover:bg-amber-400 group-hover:text-zinc-900 px-2 py-1 self-start text-zinc-700 dark:text-zinc-300 transition-colors">
+                          {uc.role}
+                        </span>
+                        <h4
+                          className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50 group-hover:text-zinc-50 dark:group-hover:text-zinc-900 transition-colors"
+                          style={{ fontFamily: 'var(--font-display)' }}
+                        >
+                          {uc.title}
+                        </h4>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-400 dark:group-hover:text-zinc-600 leading-relaxed transition-colors">{uc.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+              </motion.div>
             )}
           </AnimatePresence>
         </main>
 
-        {/* Footer */}
-        <footer className="mt-8 text-center text-[11px] text-muted-foreground border-t border-black/5 dark:border-white/10 pt-6 pb-2" style={{ animationDelay: '600ms' }}>
-          <p>
-            Built by Sabareesh. Find me on <a href="https://discord.com/users/1272910357517701147" className="text-foreground font-semibold hover:underline">Discord</a> and <a href="https://github.com/Frozen-47" className="text-foreground font-semibold hover:underline">GitHub</a>
-          </p>
+        {/* ══════════════ FOOTER ══════════════ */}
+        <footer className="border-t-2 border-zinc-900 dark:border-zinc-100 bg-white dark:bg-zinc-900 py-5 px-6">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-500 font-medium">
+            <p className="font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-100" style={{ fontFamily: 'var(--font-display)' }}>
+              Rankly
+            </p>
+            <p>
+              Built by <span className="font-black text-zinc-900 dark:text-zinc-50">Sabareesh</span> ·{' '}
+              <a href="https://discord.com/users/1272910357517701147" className="hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors">Discord</a>{' '}·{' '}
+              <a href="https://github.com/Frozen-47"               className="hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors">GitHub</a>
+            </p>
+          </div>
         </footer>
       </div>
-    </div>
+    </>
   );
 }
