@@ -22,7 +22,7 @@ import { db } from './services/dbService';
 ───────────────────────────────────────── */
 const ALL_TRENDING = [
   { category: "Laptops",     query: "MacBook Pro M3 vs Dell XPS 14",          image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80" },
-  { category: "Smartphones", query: "iPhone 15 Pro Max vs Galaxy S24 Ultra",   image: "https://images.unsplash.com/photo-1592899677974-c466c4f1d019?auto=format&fit=crop&w=400&q=80" },
+  { category: "Smartphones", query: "iPhone 15 Pro Max vs Galaxy S24 Ultra",   image: "https://images.unsplash.com/photo-1616348436168-de43ad0db179?q=80&w=800&auto=format&fit=crop" },
   { category: "Headphones",  query: "Sony WH-1000XM5 vs AirPods Max",         image: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80" },
   { category: "Cameras",     query: "Sony A7IV vs Canon R6 Mark II",           image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80" },
   { category: "Tablets",     query: "iPad Pro M4 vs Galaxy Tab S9 Ultra",      image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80" },
